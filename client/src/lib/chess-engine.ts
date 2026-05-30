@@ -28,8 +28,8 @@ export class ChessEngine {
 
     // Place pawns
     for (let col = 0; col < 8; col++) {
-      this.board[1][col] = { type: "pawn", color: "black", symbol: "♟" };
-      this.board[6][col] = { type: "pawn", color: "white", symbol: "♙" };
+      this.board[1][col] = { type: "pawn", color: "black", symbol: "♟", hasMoved: false };
+      this.board[6][col] = { type: "pawn", color: "white", symbol: "♙", hasMoved: false };
     }
 
     // Place other pieces
@@ -38,8 +38,8 @@ export class ChessEngine {
     const blackSymbols = ["♜", "♞", "♝", "♛", "♚", "♝", "♞", "♜"];
 
     for (let col = 0; col < 8; col++) {
-      this.board[0][col] = { type: backRowTypes[col], color: "black", symbol: blackSymbols[col] };
-      this.board[7][col] = { type: backRowTypes[col], color: "white", symbol: backRowSymbols[col] };
+      this.board[0][col] = { type: backRowTypes[col], color: "black", symbol: blackSymbols[col], hasMoved: false };
+      this.board[7][col] = { type: backRowTypes[col], color: "white", symbol: backRowSymbols[col], hasMoved: false };
     }
   }
 
@@ -200,6 +200,9 @@ export class ChessEngine {
 
   private getKingMoves(pos: [number, number]): [number, number][] {
     const moves: [number, number][] = [];
+    const piece = this.getPieceAt(pos)!;
+    
+    // Regular king moves
     for (let dr = -1; dr <= 1; dr++) {
       for (let dc = -1; dc <= 1; dc++) {
         if (dr === 0 && dc === 0) continue;
@@ -207,12 +210,58 @@ export class ChessEngine {
         const newCol = pos[1] + dc;
         if (newRow >= 0 && newRow <= 7 && newCol >= 0 && newCol <= 7) {
           const target = this.getPieceAt([newRow, newCol]);
-          if (!target || target.color !== this.getPieceAt(pos)!.color) {
+          if (!target || target.color !== piece.color) {
             moves.push([newRow, newCol]);
           }
         }
       }
     }
+
+    // Castling moves
+    const castlingMoves = this.getCastlingMoves(pos);
+    moves.push(...castlingMoves);
+
+    return moves;
+  }
+
+  private getCastlingMoves(kingPos: [number, number]): [number, number][] {
+    const moves: [number, number][] = [];
+    const king = this.getPieceAt(kingPos);
+    
+    if (!king || king.type !== "king" || king.hasMoved) return moves;
+    
+    // King must not be in check
+    if (this.isKingInCheck(king.color)) return moves;
+
+    const row = kingPos[0];
+    const color = king.color;
+
+    // Kingside castling (right)
+    const rightRook = this.getPieceAt([row, 7]);
+    if (rightRook && rightRook.type === "rook" && rightRook.color === color && !rightRook.hasMoved) {
+      // Check if squares between king and rook are empty
+      if (!this.getPieceAt([row, 5]) && !this.getPieceAt([row, 6])) {
+        // Check if king doesn't pass through check
+        const testBoard1 = this.simulateMove(kingPos, [row, 5]);
+        if (!this.isKingInCheck(color, testBoard1)) {
+          moves.push([row, 6]);
+        }
+      }
+    }
+
+    // Queenside castling (left)
+    const leftRook = this.getPieceAt([row, 0]);
+    if (leftRook && leftRook.type === "rook" && leftRook.color === color && !leftRook.hasMoved) {
+      // Check if squares between king and rook are empty
+      if (!this.getPieceAt([row, 1]) && !this.getPieceAt([row, 2]) && !this.getPieceAt([row, 3])) {
+        // Check if king doesn't pass through check
+        const testBoard1 = this.simulateMove(kingPos, [row, 3]);
+        if (!this.isKingInCheck(color, testBoard1)) {
+          moves.push([row, 2]);
+        }
+      }
+    }
+
     return moves;
   }
 
@@ -226,8 +275,36 @@ export class ChessEngine {
     const captured = this.getPieceAt(to);
     this.moveHistory.push({ from, to, captured: captured || undefined });
 
+    // Mark piece as moved
+    piece.hasMoved = true;
     this.setPieceAt(to, piece);
     this.setPieceAt(from, null);
+
+    // Handle castling
+    if (piece.type === "king") {
+      const fromCol = from[1];
+      const toCol = to[1];
+      
+      // Kingside castling
+      if (toCol === 6 && fromCol === 4) {
+        const rook = this.getPieceAt([from[0], 7]);
+        if (rook) {
+          rook.hasMoved = true;
+          this.setPieceAt([from[0], 5], rook);
+          this.setPieceAt([from[0], 7], null);
+        }
+      }
+      
+      // Queenside castling
+      if (toCol === 2 && fromCol === 4) {
+        const rook = this.getPieceAt([from[0], 0]);
+        if (rook) {
+          rook.hasMoved = true;
+          this.setPieceAt([from[0], 3], rook);
+          this.setPieceAt([from[0], 0], null);
+        }
+      }
+    }
 
     // Handle pawn promotion
     if (piece.type === "pawn" && (to[0] === 0 || to[0] === 7)) {
@@ -411,6 +488,7 @@ export class ChessEngine {
   }
 
   isStalemate(color: PieceColor): boolean {
+    // King must NOT be in check for stalemate
     if (this.isKingInCheck(color)) return false;
 
     // Check if any legal move exists

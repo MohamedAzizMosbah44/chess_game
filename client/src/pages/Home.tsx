@@ -5,7 +5,7 @@ import GameControls from "@/components/GameControls";
 import GameInfo from "@/components/GameInfo";
 
 export default function Home() {
-  const [gameMode, setGameMode] = useState<"menu" | "pvp" | "pvc">("menu");
+  const [gameMode, setGameMode] = useState<"menu" | "pvp" | "pvc" | "difficulty">("menu");
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
   const [gameKey, setGameKey] = useState(0);
 
@@ -13,6 +13,10 @@ export default function Home() {
     setGameMode(mode);
     if (diff) setDifficulty(diff);
     setGameKey(prev => prev + 1);
+  };
+
+  const handlePlayVsAI = () => {
+    setGameMode("difficulty");
   };
 
   const handleBackToMenu = () => {
@@ -40,14 +44,14 @@ export default function Home() {
               👥 Player vs Player
             </Button>
             <Button
-              onClick={() => setGameMode("pvc")}
+              onClick={handlePlayVsAI}
               className="w-full py-6 text-lg bg-purple-600 hover:bg-purple-700 text-white"
             >
               🤖 Play vs AI
             </Button>
           </div>
         </div>
-      ) : gameMode === "pvc" ? (
+      ) : gameMode === "difficulty" ? (
         <div className="bg-slate-800 rounded-lg shadow-2xl p-8 max-w-md w-full border border-slate-700">
           <h2 className="text-2xl font-bold text-white mb-6 text-center">Select Difficulty</h2>
           <div className="space-y-4">
@@ -68,7 +72,7 @@ export default function Home() {
             </Button>
           </div>
         </div>
-      ) : (
+      ) : gameMode === "pvp" || gameMode === "pvc" ? (
         <div className="w-full max-w-5xl">
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Chess Board */}
@@ -88,7 +92,7 @@ export default function Home() {
             </div>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

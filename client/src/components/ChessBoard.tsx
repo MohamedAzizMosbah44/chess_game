@@ -164,7 +164,9 @@ export default function ChessBoard({ gameMode, difficulty, onGameEnd }: ChessBoa
       <div className="text-center">
         <h2 className="text-2xl font-bold text-white mb-2">
           {gameOver ? (
-            <span className="text-yellow-400">Game Over - {winner} Wins!</span>
+            <span className="text-yellow-400">
+              {winner === "Draw (Stalemate)" ? `Game Over - ${winner}` : `Game Over - ${winner} Wins!`}
+            </span>
           ) : (
             <span className={engine.currentPlayer === "white" ? "text-white" : "text-gray-300"}>
               {gameStatus}
