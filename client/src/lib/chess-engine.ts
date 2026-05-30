@@ -14,6 +14,74 @@ export class ChessEngine {
   private gameMode: "pvp" | "pvc";
   private difficulty: "easy" | "medium" | "hard";
   private moveHistory: Array<{ from: [number, number]; to: [number, number]; captured?: Piece }> = [];
+  private evaluationCache: Map<string, number> = new Map();
+
+  // Piece-square tables for positional evaluation
+  private pawnTable = [
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [50, 50, 50, 50, 50, 50, 50, 50],
+    [10, 10, 20, 30, 30, 20, 10, 10],
+    [5, 5, 10, 25, 25, 10, 5, 5],
+    [0, 0, 0, 20, 20, 0, 0, 0],
+    [5, -5, -10, 0, 0, -10, -5, 5],
+    [5, 10, 10, -20, -20, 10, 10, 5],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+  ];
+
+  private knightTable = [
+    [-50, -40, -30, -30, -30, -30, -40, -50],
+    [-40, -20, 0, 0, 0, 0, -20, -40],
+    [-30, 0, 10, 15, 15, 10, 0, -30],
+    [-30, 5, 15, 20, 20, 15, 5, -30],
+    [-30, 0, 15, 20, 20, 15, 0, -30],
+    [-30, 5, 10, 15, 15, 10, 5, -30],
+    [-40, -20, 0, 5, 5, 0, -20, -40],
+    [-50, -40, -30, -30, -30, -30, -40, -50],
+  ];
+
+  private bishopTable = [
+    [-20, -10, -10, -10, -10, -10, -10, -20],
+    [-10, 0, 0, 0, 0, 0, 0, -10],
+    [-10, 0, 5, 10, 10, 5, 0, -10],
+    [-10, 5, 5, 10, 10, 5, 5, -10],
+    [-10, 0, 10, 10, 10, 10, 0, -10],
+    [-10, 10, 10, 10, 10, 10, 10, -10],
+    [-10, 5, 0, 0, 0, 0, 5, -10],
+    [-20, -10, -10, -10, -10, -10, -10, -20],
+  ];
+
+  private rookTable = [
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [5, 10, 10, 10, 10, 10, 10, 5],
+    [-5, 0, 0, 0, 0, 0, 0, -5],
+    [-5, 0, 0, 0, 0, 0, 0, -5],
+    [-5, 0, 0, 0, 0, 0, 0, -5],
+    [-5, 0, 0, 0, 0, 0, 0, -5],
+    [-5, 0, 0, 0, 0, 0, 0, -5],
+    [0, 0, 0, 5, 5, 0, 0, 0],
+  ];
+
+  private queenTable = [
+    [-20, -10, -10, -5, -5, -10, -10, -20],
+    [-10, 0, 0, 0, 0, 0, 0, -10],
+    [-10, 0, 5, 5, 5, 5, 0, -10],
+    [-5, 0, 5, 5, 5, 5, 0, -5],
+    [0, 0, 5, 5, 5, 5, 0, -5],
+    [-10, 5, 5, 5, 5, 5, 0, -10],
+    [-10, 0, 5, 0, 0, 0, 0, -10],
+    [-20, -10, -10, -5, -5, -10, -10, -20],
+  ];
+
+  private kingTable = [
+    [-30, -40, -40, -50, -50, -40, -40, -30],
+    [-30, -40, -40, -50, -50, -40, -40, -30],
+    [-30, -40, -40, -50, -50, -40, -40, -30],
+    [-30, -40, -40, -50, -50, -40, -40, -30],
+    [-20, -30, -30, -40, -40, -30, -30, -20],
+    [-10, -20, -20, -20, -20, -20, -20, -10],
+    [20, 20, 0, 0, 0, 0, 20, 20],
+    [20, 30, 10, 0, 0, 10, 30, 20],
+  ];
 
   constructor(gameMode: "pvp" | "pvc", difficulty: "easy" | "medium" | "hard" = "medium") {
     this.gameMode = gameMode;
@@ -312,6 +380,7 @@ export class ChessEngine {
     }
 
     this.currentPlayer = this.currentPlayer === "white" ? "black" : "white";
+    this.evaluationCache.clear();
     return true;
   }
 
@@ -506,62 +575,262 @@ export class ChessEngine {
   }
 
   getAIMove(): [[number, number], [number, number]] | null {
-    const moves: Array<{ from: [number, number]; to: [number, number]; score: number }> = [];
+    const depth = this.difficulty === "easy" ? 2 : this.difficulty === "medium" ? 3 : 4;
+    let bestMove: [[number, number], [number, number]] | null = null;
+    let bestScore = -Infinity;
 
-    // Collect all possible moves
+    const moves = this.getAllValidMoves("black");
+    
+    for (const [from, to] of moves) {
+      // Simulate move
+      const originalPiece = this.getPieceAt(to);
+      const fromPiece = this.getPieceAt(from);
+      
+      this.setPieceAt(to, fromPiece);
+      this.setPieceAt(from, null);
+      this.currentPlayer = "white";
+
+      const score = this.minimax(depth - 1, -Infinity, Infinity, false);
+
+      // Undo move
+      this.setPieceAt(from, fromPiece);
+      this.setPieceAt(to, originalPiece);
+      this.currentPlayer = "black";
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestMove = [from, to];
+      }
+    }
+
+    return bestMove;
+  }
+
+  private minimax(depth: number, alpha: number, beta: number, isMaximizing: boolean): number {
+    if (depth === 0) {
+      return this.evaluatePosition();
+    }
+
+    const moves = this.getAllValidMoves(isMaximizing ? "black" : "white");
+
+    if (moves.length === 0) {
+      if (this.isKingInCheck(isMaximizing ? "black" : "white")) {
+        return isMaximizing ? -10000 : 10000;
+      }
+      return 0; // Stalemate
+    }
+
+    if (isMaximizing) {
+      let maxEval = -Infinity;
+      for (const [from, to] of moves) {
+        const originalPiece = this.getPieceAt(to);
+        const fromPiece = this.getPieceAt(from);
+        
+        this.setPieceAt(to, fromPiece);
+        this.setPieceAt(from, null);
+        this.currentPlayer = "white";
+
+        const eval_ = this.minimax(depth - 1, alpha, beta, false);
+        
+        this.setPieceAt(from, fromPiece);
+        this.setPieceAt(to, originalPiece);
+        this.currentPlayer = "black";
+
+        maxEval = Math.max(eval_, maxEval);
+        alpha = Math.max(alpha, eval_);
+        if (beta <= alpha) break;
+      }
+      return maxEval;
+    } else {
+      let minEval = Infinity;
+      for (const [from, to] of moves) {
+        const originalPiece = this.getPieceAt(to);
+        const fromPiece = this.getPieceAt(from);
+        
+        this.setPieceAt(to, fromPiece);
+        this.setPieceAt(from, null);
+        this.currentPlayer = "black";
+
+        const eval_ = this.minimax(depth - 1, alpha, beta, true);
+        
+        this.setPieceAt(from, fromPiece);
+        this.setPieceAt(to, originalPiece);
+        this.currentPlayer = "white";
+
+        minEval = Math.min(eval_, minEval);
+        beta = Math.min(beta, eval_);
+        if (beta <= alpha) break;
+      }
+      return minEval;
+    }
+  }
+
+  private getAllValidMoves(color: PieceColor): Array<[[number, number], [number, number]]> {
+    const moves: Array<[[number, number], [number, number]]> = [];
+    
     for (let row = 0; row < 8; row++) {
       for (let col = 0; col < 8; col++) {
         const piece = this.board[row][col];
-        if (piece && piece.color === "black") {
-          const validMoves = this.getValidMoves([row, col]);
+        if (piece && piece.color === color) {
+          const validMoves = this.getValidMovesForColor([row, col], color);
           for (const to of validMoves) {
-            let score = 0;
+            moves.push([[row, col], to]);
+          }
+        }
+      }
+    }
+    
+    return moves;
+  }
 
-            // Capture scoring
-            const target = this.getPieceAt(to);
-            if (target) {
-              score += this.getPieceValue(target.type) * 10;
-            }
+  private getValidMovesForColor(pos: [number, number], color: PieceColor): [number, number][] {
+    const piece = this.getPieceAt(pos);
+    if (!piece || piece.color !== color) return [];
 
-            // Piece positioning
-            score += Math.random() * 10; // Add randomness for variety
+    let moves: [number, number][] = [];
 
-            moves.push({ from: [row, col], to, score });
+    switch (piece.type) {
+      case "pawn":
+        moves = this.getPawnMoves(pos);
+        break;
+      case "rook":
+        moves = this.getRookMoves(pos);
+        break;
+      case "knight":
+        moves = this.getKnightMoves(pos);
+        break;
+      case "bishop":
+        moves = this.getBishopMoves(pos);
+        break;
+      case "queen":
+        moves = this.getQueenMoves(pos);
+        break;
+      case "king":
+        moves = this.getKingMoves(pos);
+        break;
+    }
+
+    // Filter out moves that would leave the king in check
+    return moves.filter(move => {
+      const testBoard = this.simulateMove(pos, move);
+      return !this.isKingInCheck(color, testBoard);
+    });
+  }
+
+  private evaluatePosition(): number {
+    let score = 0;
+
+    for (let row = 0; row < 8; row++) {
+      for (let col = 0; col < 8; col++) {
+        const piece = this.board[row][col];
+        if (piece) {
+          const pieceValue = this.getPieceValue(piece.type);
+          const positionBonus = this.getPositionBonus(piece.type, row, col, piece.color);
+          const value = pieceValue + positionBonus;
+
+          if (piece.color === "black") {
+            score += value;
+          } else {
+            score -= value;
           }
         }
       }
     }
 
-    if (moves.length === 0) return null;
+    // Add tactical bonuses
+    score += this.getTacticalBonus();
 
-    // Sort by score and apply difficulty
-    moves.sort((a, b) => b.score - a.score);
+    return score;
+  }
 
-    let selectedMove;
-    if (this.difficulty === "easy") {
-      selectedMove = moves[Math.floor(Math.random() * Math.min(5, moves.length))];
-    } else if (this.difficulty === "medium") {
-      selectedMove = moves[Math.floor(Math.random() * Math.min(3, moves.length))];
-    } else {
-      selectedMove = moves[0]; // Hard: always pick the best move
+  private getPositionBonus(type: PieceType, row: number, col: number, color: PieceColor): number {
+    let table: number[][] = [];
+
+    switch (type) {
+      case "pawn":
+        table = this.pawnTable;
+        break;
+      case "knight":
+        table = this.knightTable;
+        break;
+      case "bishop":
+        table = this.bishopTable;
+        break;
+      case "rook":
+        table = this.rookTable;
+        break;
+      case "queen":
+        table = this.queenTable;
+        break;
+      case "king":
+        table = this.kingTable;
+        break;
     }
 
-    return selectedMove ? [selectedMove.from, selectedMove.to] : null;
+    // Flip table for white pieces
+    const adjustedRow = color === "white" ? 7 - row : row;
+    return table[adjustedRow][col];
+  }
+
+  private getTacticalBonus(): number {
+    let bonus = 0;
+
+    // Bonus for controlling center
+    const centerSquares = [[3, 3], [3, 4], [4, 3], [4, 4]];
+    for (const [row, col] of centerSquares) {
+      const piece = this.getPieceAt([row, col]);
+      if (piece && piece.color === "black") {
+        bonus += 10;
+      } else if (piece && piece.color === "white") {
+        bonus -= 10;
+      }
+    }
+
+    // Bonus for piece safety
+    for (let row = 0; row < 8; row++) {
+      for (let col = 0; col < 8; col++) {
+        const piece = this.getPieceAt([row, col]);
+        if (piece && piece.type !== "king") {
+          const isAttacked = this.isSquareAttacked([row, col], piece.color === "white" ? "black" : "white");
+          if (!isAttacked && piece.color === "black") {
+            bonus += 5;
+          } else if (!isAttacked && piece.color === "white") {
+            bonus -= 5;
+          }
+        }
+      }
+    }
+
+    return bonus;
+  }
+
+  private isSquareAttacked(square: [number, number], byColor: PieceColor): boolean {
+    for (let row = 0; row < 8; row++) {
+      for (let col = 0; col < 8; col++) {
+        const piece = this.board[row][col];
+        if (piece && piece.color === byColor) {
+          if (this.canPieceAttack([row, col], square, this.board)) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
   }
 
   private getPieceValue(type: PieceType): number {
     switch (type) {
       case "pawn":
-        return 1;
+        return 100;
       case "knight":
       case "bishop":
-        return 3;
+        return 300;
       case "rook":
-        return 5;
+        return 500;
       case "queen":
-        return 9;
+        return 900;
       case "king":
-        return 1000;
+        return 10000;
     }
   }
 }
