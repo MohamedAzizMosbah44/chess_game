@@ -15,6 +15,7 @@ export class ChessEngine {
   private difficulty: "easy" | "medium" | "hard";
   private moveHistory: Array<{ from: [number, number]; to: [number, number]; captured?: Piece }> = [];
   private evaluationCache: Map<string, number> = new Map();
+  private enPassantSquare: [number, number] | null = null; // Square where en passant capture is possible
 
   // Piece-square tables for positional evaluation
   private pawnTable = [
@@ -188,6 +189,14 @@ export class ChessEngine {
       }
     }
 
+    // En passant capture
+    if (this.enPassantSquare) {
+      const [epRow, epCol] = this.enPassantSquare;
+      if (nextRow === epRow && Math.abs(col - epCol) === 1) {
+        moves.push(this.enPassantSquare);
+      }
+    }
+
     return moves;
   }
 
@@ -340,13 +349,29 @@ export class ChessEngine {
     const validMoves = this.getValidMoves(from);
     if (!validMoves.some(m => m[0] === to[0] && m[1] === to[1])) return false;
 
-    const captured = this.getPieceAt(to);
+    let captured = this.getPieceAt(to);
+    
+    // Handle en passant capture
+    if (piece.type === "pawn" && this.enPassantSquare && to[0] === this.enPassantSquare[0] && to[1] === this.enPassantSquare[1]) {
+      const capturedPawnRow = from[0];
+      const capturedPawnCol = to[1];
+      captured = this.getPieceAt([capturedPawnRow, capturedPawnCol]);
+      this.setPieceAt([capturedPawnRow, capturedPawnCol], null);
+    }
+    
     this.moveHistory.push({ from, to, captured: captured || undefined });
 
     // Mark piece as moved
     piece.hasMoved = true;
     this.setPieceAt(to, piece);
     this.setPieceAt(from, null);
+    
+    // Update en passant square
+    this.enPassantSquare = null;
+    if (piece.type === "pawn" && Math.abs(to[0] - from[0]) === 2) {
+      const enPassantRow = (from[0] + to[0]) / 2;
+      this.enPassantSquare = [enPassantRow, to[1]];
+    }
 
     // Handle castling
     if (piece.type === "king") {
