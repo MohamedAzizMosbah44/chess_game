@@ -27,11 +27,14 @@ export default function ChessBoard({ gameMode, difficulty, timeControl, onGameEn
   const [, setRenderKey] = useState(0);
 
   // Time control
-  const getInitialTime = () => {
+  const getInitialTime = (): number => {
     switch (timeControl) {
-      case "classical": return 600; // 10 minutes
-      case "rapid": return 300; // 5 minutes
-      case "blitz": return 180; // 3 minutes
+      case "classical": return 7200; // 120 minutes
+      case "rapid10": return 600; // 10 minutes
+      case "rapid15": return 900; // 15 minutes
+      case "rapid30": return 1800; // 30 minutes
+      case "blitz3": return 180; // 3 minutes
+      case "blitz5": return 300; // 5 minutes
       case "bullet": return 60; // 1 minute
     }
   };
@@ -204,8 +207,8 @@ export default function ChessBoard({ gameMode, difficulty, timeControl, onGameEn
         {isValidMove && (
           <div
             style={{
-              width: squareSize > 50 ? "12px" : "8px",
-              height: squareSize > 50 ? "12px" : "8px",
+              width: squareSize > 50 ? 12 : 8,
+              height: squareSize > 50 ? 12 : 8,
               backgroundColor: "#4169e1",
               borderRadius: "50%",
             }}

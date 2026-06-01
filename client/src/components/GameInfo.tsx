@@ -9,11 +9,17 @@ export default function GameInfo({ gameMode, timeControl }: GameInfoProps) {
   const getTimeControlInfo = (tc: TimeControl) => {
     switch (tc) {
       case "classical":
-        return { name: "Classical", time: "10 min", icon: "🐢" };
-      case "rapid":
-        return { name: "Rapid", time: "5 min", icon: "🚶" };
-      case "blitz":
-        return { name: "Blitz", time: "3 min", icon: "🏃" };
+        return { name: "Classical", time: "120 min", icon: "🐢" };
+      case "rapid10":
+        return { name: "Rapid 10", time: "10 min", icon: "🚶" };
+      case "rapid15":
+        return { name: "Rapid 15", time: "15 min", icon: "🚶" };
+      case "rapid30":
+        return { name: "Rapid 30", time: "30 min", icon: "🚶" };
+      case "blitz3":
+        return { name: "Blitz 3", time: "3 min", icon: "🏃" };
+      case "blitz5":
+        return { name: "Blitz 5", time: "5 min", icon: "🏃" };
       case "bullet":
         return { name: "Bullet", time: "1 min", icon: "⚡" };
     }
@@ -33,7 +39,7 @@ export default function GameInfo({ gameMode, timeControl }: GameInfoProps) {
 
         <div>
           <p className="text-xs sm:text-sm font-semibold text-slate-400">Time Control</p>
-          <p className="text-base sm:text-lg">{tcInfo.icon} {tcInfo.name} ({tcInfo.time})</p>
+          <p className="text-base sm:text-lg">{tcInfo?.icon} {tcInfo?.name} ({tcInfo?.time})</p>
         </div>
 
         <div>
