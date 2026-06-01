@@ -1,14 +1,22 @@
 import { useState, useEffect } from "react";
 import { ChessEngine } from "@/lib/chess-engine";
 import { Button } from "@/components/ui/button";
+import type { TimeControl } from "@/pages/Home";
 
 interface ChessBoardProps {
   gameMode: "pvp" | "pvc";
   difficulty: "easy" | "medium" | "hard";
+  timeControl: TimeControl;
   onGameEnd: () => void;
 }
 
-export default function ChessBoard({ gameMode, difficulty, onGameEnd }: ChessBoardProps) {
+const formatTime = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+};
+
+export default function ChessBoard({ gameMode, difficulty, timeControl, onGameEnd }: ChessBoardProps) {
   const [engine] = useState(() => new ChessEngine(gameMode, difficulty));
   const [selectedSquare, setSelectedSquare] = useState<[number, number] | null>(null);
   const [validMoves, setValidMoves] = useState<[number, number][]>([]);
@@ -18,7 +26,67 @@ export default function ChessBoard({ gameMode, difficulty, onGameEnd }: ChessBoa
   const [lastMove, setLastMove] = useState<{ from: [number, number]; to: [number, number] } | null>(null);
   const [, setRenderKey] = useState(0);
 
-  const SQUARE_SIZE = 60;
+  // Time control
+  const getInitialTime = () => {
+    switch (timeControl) {
+      case "classical": return 600; // 10 minutes
+      case "rapid": return 300; // 5 minutes
+      case "blitz": return 180; // 3 minutes
+      case "bullet": return 60; // 1 minute
+    }
+  };
+
+  const [whiteTime, setWhiteTime] = useState(getInitialTime());
+  const [blackTime, setBlackTime] = useState(getInitialTime());
+  const [squareSize, setSquareSize] = useState(60);
+
+  // Timer effect
+  useEffect(() => {
+    if (gameOver) return;
+
+    const interval = setInterval(() => {
+      if (engine.currentPlayer === "white") {
+        setWhiteTime(prev => {
+          if (prev <= 1) {
+            setGameOver(true);
+            setWinner("Black");
+            return 0;
+          }
+          return prev - 1;
+        });
+      } else {
+        setBlackTime(prev => {
+          if (prev <= 1) {
+            setGameOver(true);
+            setWinner("White");
+            return 0;
+          }
+          return prev - 1;
+        });
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [gameOver, engine.currentPlayer]);
+
+  // Responsive sizing
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      if (width < 640) {
+        setSquareSize(35); // Mobile
+      } else if (width < 1024) {
+        setSquareSize(45); // Tablet
+      } else {
+        setSquareSize(60); // Desktop
+      }
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const BOARD_SIZE = 8;
 
   const handleSquareClick = (row: number, col: number) => {
@@ -122,22 +190,22 @@ export default function ChessBoard({ gameMode, difficulty, onGameEnd }: ChessBoa
         onClick={() => handleSquareClick(row, col)}
         className="relative cursor-pointer hover:opacity-80 transition-opacity"
         style={{
-          width: SQUARE_SIZE,
-          height: SQUARE_SIZE,
+          width: squareSize,
+          height: squareSize,
           backgroundColor: bgColor,
           border: "1px solid #999",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: "32px",
+          fontSize: squareSize > 50 ? "32px" : "20px",
           fontWeight: "bold",
         }}
       >
         {isValidMove && (
           <div
             style={{
-              width: "12px",
-              height: "12px",
+              width: squareSize > 50 ? "12px" : "8px",
+              height: squareSize > 50 ? "12px" : "8px",
               backgroundColor: "#4169e1",
               borderRadius: "50%",
             }}
@@ -158,11 +226,33 @@ export default function ChessBoard({ gameMode, difficulty, onGameEnd }: ChessBoa
     return squares;
   };
 
+  const timeWarning = (time: number) => {
+    if (time < 10) return "text-red-500";
+    if (time < 30) return "text-yellow-500";
+    return "text-white";
+  };
+
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="flex flex-col items-center gap-4 w-full px-2 sm:px-4">
+      {/* Timers - Top */}
+      <div className="w-full max-w-2xl grid grid-cols-2 gap-4 mb-2">
+        <div className="bg-slate-700 rounded p-3 text-center">
+          <p className="text-xs sm:text-sm text-slate-400 mb-1">Black</p>
+          <p className={`text-lg sm:text-2xl font-bold font-mono ${timeWarning(blackTime)}`}>
+            {formatTime(blackTime)}
+          </p>
+        </div>
+        <div className="bg-slate-700 rounded p-3 text-center">
+          <p className="text-xs sm:text-sm text-slate-400 mb-1">White</p>
+          <p className={`text-lg sm:text-2xl font-bold font-mono ${timeWarning(whiteTime)}`}>
+            {formatTime(whiteTime)}
+          </p>
+        </div>
+      </div>
+
       {/* Status */}
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-white mb-2">
+        <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">
           {gameOver ? (
             <span className="text-yellow-400">
               {winner === "Draw (Stalemate)" ? `Game Over - ${winner}` : `Game Over - ${winner} Wins!`}
@@ -179,7 +269,7 @@ export default function ChessBoard({ gameMode, difficulty, onGameEnd }: ChessBoa
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: `repeat(8, ${SQUARE_SIZE}px)`,
+          gridTemplateColumns: `repeat(8, ${squareSize}px)`,
           gap: "0",
           border: "2px solid #333",
           boxShadow: "0 0 20px rgba(0, 0, 0, 0.5)",
@@ -189,12 +279,12 @@ export default function ChessBoard({ gameMode, difficulty, onGameEnd }: ChessBoa
       </div>
 
       {/* Controls */}
-      <div className="flex gap-4 mt-4">
-        <Button onClick={onGameEnd} className="bg-red-600 hover:bg-red-700 text-white">
+      <div className="flex gap-2 sm:gap-4 mt-4 flex-wrap justify-center">
+        <Button onClick={onGameEnd} className="bg-red-600 hover:bg-red-700 text-white text-sm sm:text-base">
           Back to Menu
         </Button>
         {gameOver && (
-          <Button onClick={() => window.location.reload()} className="bg-green-600 hover:bg-green-700 text-white">
+          <Button onClick={() => window.location.reload()} className="bg-green-600 hover:bg-green-700 text-white text-sm sm:text-base">
             Play Again
           </Button>
         )}
