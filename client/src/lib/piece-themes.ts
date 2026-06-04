@@ -1,4 +1,4 @@
-export type PieceTheme = "classic" | "unicode" | "ascii" | "symbols" | "fancy" | "emoji";
+export type PieceTheme = "classic" | "ascii" | "symbols" | "fancy" | "emoji";
 
 export interface PieceSet {
   pawn: string;
@@ -29,42 +29,24 @@ export const pieceThemes: Record<PieceTheme, { name: string; white: PieceSet; bl
       king: "k",
     },
   },
-  unicode: {
-    name: "Unicode",
-    white: {
-      pawn: "♙",
-      knight: "♘",
-      bishop: "♗",
-      rook: "♖",
-      queen: "♕",
-      king: "♔",
-    },
-    black: {
-      pawn: "♟",
-      knight: "♞",
-      bishop: "♝",
-      rook: "♜",
-      queen: "♛",
-      king: "♚",
-    },
-  },
+
   ascii: {
     name: "ASCII",
     white: {
-      pawn: "P",
-      knight: "N",
-      bishop: "B",
-      rook: "R",
-      queen: "Q",
-      king: "K",
+      pawn: "♟︎",
+      knight: "♞︎",
+      bishop: "♝︎",
+      rook: "♜︎",
+      queen: "♛︎",
+      king: "♚︎",
     },
     black: {
-      pawn: "p",
-      knight: "n",
-      bishop: "b",
-      rook: "r",
-      queen: "q",
-      king: "k",
+      pawn: "♙︎",
+      knight: "♘︎",
+      bishop: "♗︎",
+      rook: "♖︎",
+      queen: "♕︎",
+      king: "♔︎",
     },
   },
   symbols: {

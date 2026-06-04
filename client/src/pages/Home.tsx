@@ -64,8 +64,7 @@ export default function Home() {
 
   const pieceThemeOptions: Array<{ label: string; value: PieceTheme; preview: string }> = [
     { label: "Classic", value: "classic", preview: "K Q R B N P" },
-    { label: "Unicode", value: "unicode", preview: "♔ ♕ ♖ ♗ ♘ ♙" },
-    { label: "ASCII", value: "ascii", preview: "K Q R B N P" },
+    { label: "ASCII", value: "ascii", preview: "♚︎ ♛︎ ♜︎ ♝︎ ♞︎ ♟︎" },
     { label: "Symbols", value: "symbols", preview: "⬛️ ὅ1 🏰 🎯 🐴 ⬜" },
     { label: "Fancy", value: "fancy", preview: "◎ ◉ ◻ ◆ ◈ ◯" },
     { label: "Emoji", value: "emoji", preview: "🤴 👸 🏰 ⚪ 🐴 🤍" },
