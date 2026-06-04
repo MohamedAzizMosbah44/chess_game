@@ -12,7 +12,7 @@ export default function Home() {
   const [gameMode, setGameMode] = useState<"menu" | "pvp" | "pvc" | "difficulty" | "timecontrol" | "ai-timecontrol" | "piece-theme" | "board-theme">("menu");
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
   const [timeControl, setTimeControl] = useState<TimeControl>("classical");
-  const [pieceTheme, setPieceTheme] = useState<PieceTheme>("unicode");
+  const [pieceTheme, setPieceTheme] = useState<PieceTheme>("classic");
   const [boardTheme, setBoardTheme] = useState<BoardTheme>("classic");
   const [gameKey, setGameKey] = useState(0);
 
@@ -63,12 +63,11 @@ export default function Home() {
   ];
 
   const pieceThemeOptions: Array<{ label: string; value: PieceTheme; preview: string }> = [
-    { label: "Unicode (Classic)", value: "unicode", preview: "♚ ♛ ♜ ♝ ♞ ♟" },
+    { label: "Classic", value: "classic", preview: "K Q R B N P" },
     { label: "ASCII", value: "ascii", preview: "K Q R B N P" },
-    { label: "Symbols", value: "symbols", preview: "⚜️ 👑 🏰 🎯 🐴 ⚪" },
+    { label: "Symbols", value: "symbols", preview: "⬛️ ὅ1 🏰 🎯 🐴 ⬜" },
     { label: "Fancy", value: "fancy", preview: "◎ ◉ ◻ ◆ ◈ ◯" },
-    { label: "Letters", value: "letters", preview: "♚︎ ♛︎ ♜︎ ♝︎ ♞︎ ♟︎" },
-    { label: "Emoji", value: "emoji", preview: "🤴 👸 🏰 ⛪ 🦄 🤍" },
+    { label: "Emoji", value: "emoji", preview: "🤴 👸 🏰 ⚪ 🐴 🤍" },
   ];
 
   const boardThemeOptions: Array<{ label: string; value: BoardTheme }> = [
