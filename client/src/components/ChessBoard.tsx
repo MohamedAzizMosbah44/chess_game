@@ -1,12 +1,16 @@
 import { useState, useEffect } from "react";
 import { ChessEngine } from "@/lib/chess-engine";
 import { Button } from "@/components/ui/button";
+import { getThemeSymbol, type PieceTheme } from "@/lib/piece-themes";
+import { getThemeColors, type BoardTheme } from "@/lib/board-themes";
 import type { TimeControl } from "@/pages/Home";
 
 interface ChessBoardProps {
   gameMode: "pvp" | "pvc";
   difficulty: "easy" | "medium" | "hard";
   timeControl: TimeControl;
+  pieceTheme: PieceTheme;
+  boardTheme: BoardTheme;
   onGameEnd: () => void;
 }
 
@@ -16,7 +20,7 @@ const formatTime = (seconds: number): string => {
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 };
 
-export default function ChessBoard({ gameMode, difficulty, timeControl, onGameEnd }: ChessBoardProps) {
+export default function ChessBoard({ gameMode, difficulty, timeControl, pieceTheme, boardTheme, onGameEnd }: ChessBoardProps) {
   const [engine] = useState(() => new ChessEngine(gameMode, difficulty));
   const [selectedSquare, setSelectedSquare] = useState<[number, number] | null>(null);
   const [validMoves, setValidMoves] = useState<[number, number][]>([]);
@@ -91,6 +95,7 @@ export default function ChessBoard({ gameMode, difficulty, timeControl, onGameEn
   }, []);
 
   const BOARD_SIZE = 8;
+  const colors = getThemeColors(boardTheme);
 
   const handleSquareClick = (row: number, col: number) => {
     if (gameOver) return;
@@ -181,11 +186,14 @@ export default function ChessBoard({ gameMode, difficulty, timeControl, onGameEn
       (lastMove.to[0] === row && lastMove.to[1] === col)
     );
 
-    let bgColor = isLight ? "#f0d9b5" : "#b58863";
-    if (isSelected) bgColor = "#baca44";
-    if (isLastMove) bgColor = "#ffe135";
+    let bgColor = isLight ? colors.light : colors.dark;
+    if (isSelected) bgColor = colors.selected;
+    if (isLastMove) bgColor = colors.lastMove;
 
     const piece = engine.getPieceAt([row, col]);
+    const pieceSymbol = piece
+      ? getThemeSymbol(pieceTheme, piece.color, piece.type as any)
+      : null;
 
     return (
       <div
@@ -209,12 +217,12 @@ export default function ChessBoard({ gameMode, difficulty, timeControl, onGameEn
             style={{
               width: squareSize > 50 ? 12 : 8,
               height: squareSize > 50 ? 12 : 8,
-              backgroundColor: "#4169e1",
+              backgroundColor: colors.validMove,
               borderRadius: "50%",
             }}
           />
         )}
-        {piece && <span>{piece.symbol}</span>}
+        {pieceSymbol && <span>{pieceSymbol}</span>}
       </div>
     );
   };

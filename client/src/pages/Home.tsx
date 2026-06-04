@@ -3,13 +3,17 @@ import { Button } from "@/components/ui/button";
 import ChessBoard from "@/components/ChessBoard";
 import GameControls from "@/components/GameControls";
 import GameInfo from "@/components/GameInfo";
+import type { PieceTheme } from "@/lib/piece-themes";
+import type { BoardTheme } from "@/lib/board-themes";
 
 export type TimeControl = "classical" | "rapid10" | "rapid15" | "rapid30" | "blitz3" | "blitz5" | "bullet";
 
 export default function Home() {
-  const [gameMode, setGameMode] = useState<"menu" | "pvp" | "pvc" | "difficulty" | "timecontrol" | "ai-timecontrol">("menu");
+  const [gameMode, setGameMode] = useState<"menu" | "pvp" | "pvc" | "difficulty" | "timecontrol" | "ai-timecontrol" | "piece-theme" | "board-theme">("menu");
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
   const [timeControl, setTimeControl] = useState<TimeControl>("classical");
+  const [pieceTheme, setPieceTheme] = useState<PieceTheme>("unicode");
+  const [boardTheme, setBoardTheme] = useState<BoardTheme>("classic");
   const [gameKey, setGameKey] = useState(0);
 
   const handleStartGame = (mode: "pvp" | "pvc", diff?: "easy" | "medium" | "hard", time?: TimeControl) => {
@@ -33,6 +37,16 @@ export default function Home() {
     setGameMode("ai-timecontrol");
   };
 
+  const handleSelectPieceTheme = (theme: PieceTheme) => {
+    setPieceTheme(theme);
+    setGameMode("board-theme");
+  };
+
+  const handleSelectBoardTheme = (theme: BoardTheme) => {
+    setBoardTheme(theme);
+    setGameMode("menu");
+  };
+
   const handleBackToMenu = () => {
     setGameMode("menu");
     setGameKey(prev => prev + 1);
@@ -46,6 +60,26 @@ export default function Home() {
     { label: "Blitz 3", value: "blitz3", icon: "🏃", description: "3 min per player" },
     { label: "Blitz 5", value: "blitz5", icon: "🏃", description: "5 min per player" },
     { label: "Bullet", value: "bullet", icon: "⚡", description: "1 min per player" },
+  ];
+
+  const pieceThemeOptions: Array<{ label: string; value: PieceTheme; preview: string }> = [
+    { label: "Unicode (Classic)", value: "unicode", preview: "♔ ♕ ♖ ♗ ♘ ♙" },
+    { label: "ASCII", value: "ascii", preview: "K Q R B N P" },
+    { label: "Symbols", value: "symbols", preview: "⚜️ 👑 🏰 🎯 🐴 ⚪" },
+    { label: "Fancy", value: "fancy", preview: "◎ ◉ ◻ ◆ ◈ ◯" },
+    { label: "Letters", value: "letters", preview: "♚︎ ♛︎ ♜︎ ♝︎ ♞︎ ♟︎" },
+    { label: "Emoji", value: "emoji", preview: "🤴 👸 🏰 ⛪ 🦄 🤍" },
+  ];
+
+  const boardThemeOptions: Array<{ label: string; value: BoardTheme }> = [
+    { label: "Classic", value: "classic" },
+    { label: "Green", value: "green" },
+    { label: "Blue", value: "blue" },
+    { label: "Purple", value: "purple" },
+    { label: "Wood", value: "wood" },
+    { label: "Marble", value: "marble" },
+    { label: "Ocean", value: "ocean" },
+    { label: "Sunset", value: "sunset" },
   ];
 
   return (
@@ -73,7 +107,66 @@ export default function Home() {
             >
               🤖 Play vs AI
             </Button>
+            <Button
+              onClick={() => setGameMode("piece-theme")}
+              className="w-full py-4 sm:py-6 text-base sm:text-lg bg-orange-600 hover:bg-orange-700 text-white"
+            >
+              🎨 Customize Themes
+            </Button>
           </div>
+        </div>
+      ) : gameMode === "piece-theme" ? (
+        <div className="bg-slate-800 rounded-lg shadow-2xl p-6 sm:p-8 max-w-2xl w-full border border-slate-700">
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-6 text-center">Select Piece Theme</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            {pieceThemeOptions.map((option) => (
+              <Button
+                key={option.value}
+                onClick={() => handleSelectPieceTheme(option.value)}
+                className={`py-3 sm:py-4 text-base sm:text-lg ${
+                  pieceTheme === option.value
+                    ? "bg-green-600 hover:bg-green-700 ring-2 ring-green-400"
+                    : "bg-slate-600 hover:bg-slate-700"
+                } text-white`}
+              >
+                <div className="flex flex-col items-center w-full">
+                  <span className="text-lg sm:text-xl mb-1">{option.label}</span>
+                  <span className="text-xs sm:text-sm text-slate-200">{option.preview}</span>
+                </div>
+              </Button>
+            ))}
+          </div>
+          <Button
+            onClick={handleBackToMenu}
+            className="w-full py-4 sm:py-6 text-base sm:text-lg bg-slate-600 hover:bg-slate-700 text-white mt-4"
+          >
+            ← Back
+          </Button>
+        </div>
+      ) : gameMode === "board-theme" ? (
+        <div className="bg-slate-800 rounded-lg shadow-2xl p-6 sm:p-8 max-w-2xl w-full border border-slate-700">
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-6 text-center">Select Board Theme</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+            {boardThemeOptions.map((option) => (
+              <Button
+                key={option.value}
+                onClick={() => handleSelectBoardTheme(option.value)}
+                className={`py-3 sm:py-4 text-base sm:text-lg ${
+                  boardTheme === option.value
+                    ? "bg-green-600 hover:bg-green-700 ring-2 ring-green-400"
+                    : "bg-slate-600 hover:bg-slate-700"
+                } text-white`}
+              >
+                <span className="text-xs sm:text-sm">{option.label}</span>
+              </Button>
+            ))}
+          </div>
+          <Button
+            onClick={() => setGameMode("piece-theme")}
+            className="w-full py-4 sm:py-6 text-base sm:text-lg bg-slate-600 hover:bg-slate-700 text-white mt-4"
+          >
+            ← Back
+          </Button>
         </div>
       ) : gameMode === "timecontrol" ? (
         <div className="bg-slate-800 rounded-lg shadow-2xl p-6 sm:p-8 max-w-sm w-full border border-slate-700">
@@ -157,6 +250,8 @@ export default function Home() {
                 gameMode={gameMode}
                 difficulty={difficulty}
                 timeControl={timeControl}
+                pieceTheme={pieceTheme}
+                boardTheme={boardTheme}
                 onGameEnd={handleBackToMenu}
               />
             </div>
