@@ -222,7 +222,11 @@ export default function ChessBoard({ gameMode, difficulty, timeControl, pieceThe
             }}
           />
         )}
-        {pieceSymbol && <span>{pieceSymbol}</span>}
+        {pieceSymbol && (
+          <span style={{ color: piece?.color === "white" ? "#ffffff" : "#000000" }}>
+            {pieceSymbol}
+          </span>
+        )}
       </div>
     );
   };
