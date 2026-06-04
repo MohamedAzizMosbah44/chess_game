@@ -63,7 +63,7 @@ export default function Home() {
   ];
 
   const pieceThemeOptions: Array<{ label: string; value: PieceTheme; preview: string }> = [
-    { label: "Unicode (Classic)", value: "unicode", preview: "♔ ♕ ♖ ♗ ♘ ♙" },
+    { label: "Unicode (Classic)", value: "unicode", preview: "♚ ♛ ♜ ♝ ♞ ♟" },
     { label: "ASCII", value: "ascii", preview: "K Q R B N P" },
     { label: "Symbols", value: "symbols", preview: "⚜️ 👑 🏰 🎯 🐴 ⚪" },
     { label: "Fancy", value: "fancy", preview: "◎ ◉ ◻ ◆ ◈ ◯" },

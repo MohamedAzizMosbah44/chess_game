@@ -13,12 +13,12 @@ export const pieceThemes: Record<PieceTheme, { name: string; white: PieceSet; bl
   unicode: {
     name: "Unicode (Classic)",
     white: {
-      pawn: "♙",
-      knight: "♘",
-      bishop: "♗",
-      rook: "♖",
-      queen: "♕",
-      king: "♔",
+      pawn: "♟",
+      knight: "♞",
+      bishop: "♝",
+      rook: "♜",
+      queen: "♛",
+      king: "♚",
     },
     black: {
       pawn: "♟",
